@@ -1,0 +1,13 @@
+{
+    "source_bucket": "resize4me",
+    "destination_buckets": [
+        {
+            "name": "resize4me-300px",
+            "size": 300
+        }, 
+        {
+            "name": "resize4me-600px",
+            "size": 600
+        }
+    ]
+}

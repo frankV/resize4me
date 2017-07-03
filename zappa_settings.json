@@ -1,0 +1,18 @@
+{
+    "production": {
+        "events": [{
+            "function": "resize4me.lambda_handler",
+            "event_source": {
+                "arn": "arn:aws:s3:::resize4me",
+                "events": [
+                    "s3:ObjectCreated:*"
+                ]
+            }
+        }],
+        "aws_region": "us-east-1",
+        "profile_name": "default",
+        "s3_bucket": "zappa-resize4me",
+        "timeout_seconds": 30,
+        "app_function": "app.app"
+    }
+}
