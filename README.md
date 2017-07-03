@@ -15,15 +15,15 @@ Specify your buckets in `resize4me_settings.json`:
     "source_bucket": "resize4me",
 
     // Buckets to receive the resized images,
-    // containing the bucket name and the base width for resizing.
+    // containing the bucket name and the base width for resizing, in pixels.
     "destination_buckets": [
         {
             "name": "resize4me-300px",
-            "size": 300
+            "width_size": 300
         }, 
         {
             "name": "resize4me-600px",
-            "size": 600
+            "width_size": 600
         }
     ]
 }

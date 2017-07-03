@@ -45,8 +45,8 @@ class Resize4Me():
         for bucket in self.destination_buckets:
             if not bucket.get('name'):
                 raise Exception('A destination bucket must have a name')
-            if not bucket.get('size'):
-                raise Exception('A destination bucket must have a size')
+            if not bucket.get('width_size'):
+                raise Exception('A destination bucket must have a width size')
 
         return config
 
@@ -160,7 +160,7 @@ class Resize4Me():
         }
 
         for bucket in self.destination_buckets:
-            dict_key = 'resized-{}px'.format(bucket.get('size'))
+            dict_key = 'resized-{}px'.format(bucket.get('width_size'))
             response[dict_key] = 'https://s3.amazonaws.com/{}/{}'.format(
                 bucket.get('name'),
                 quote_plus(key),
@@ -192,7 +192,7 @@ def lambda_handler(event, context):
         # Resized files
         for bucket in r4me.destination_buckets:
             bucket_name = bucket.get('name')
-            bucket_size = bucket.get('size')
+            bucket_size = bucket.get('width_size')
 
             resized_image = r4me.resize_image(
                 obj_body,
