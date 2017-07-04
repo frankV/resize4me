@@ -49,9 +49,9 @@ Configure your deployment in `zappa_settigs.json`:
         "s3_bucket": "zappa-resize4me",
         "timeout_seconds": 30,
 
-        // If you don't want the Flask API, please remove the line above
+        // If you don't want the Flask API, please remove the line below
         "app_function": "app.app",
-        // And add this one
+        // And uncomment this one
         "apigateway_enabled": false
     }
 }
