@@ -1,4 +1,7 @@
 # Resize4Me
+[![Coverage Status](https://coveralls.io/repos/github/jonatasbaldin/resize4me/badge.svg?branch=jonatas%2Fcoverrals)](https://coveralls.io/github/jonatasbaldin/resize4me?branch=jonatas%2Fcoverrals)
+[![CircleCI](https://circleci.com/gh/jonatasbaldin/resize4me.svg?style=svg)](https://circleci.com/gh/jonatasbaldin/resize4me)
+
 Upload an image to an S3 bucket and see them magically being resized in other buckets!  
 
 A Lambda function will resize images uploaded to your `source_bucket` into any `destination_buckets`.  
