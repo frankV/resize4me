@@ -13,14 +13,13 @@ class Resize4Me():
     Resizes and uplodads images do an S3 bucket.
     """
 
-    def __init__(self):
+    def __init__(self, config_file='resize4me_settings.json'):
         self.s3 = boto3.resource('s3')
         self.source_bucket = None
         self.destination_buckets = None
-        self.config = self.parse_config()
-        self.verify_buckets()
+        self.config = self.parse_config(config_file)
 
-    def parse_config(self):
+    def parse_config(self, config_file):
         """
         Parses and verifies if the configuration file is correct,
         which should be in the project root directory, named as
@@ -30,23 +29,23 @@ class Resize4Me():
         <dict> config - the configuration file in a dictionary.
         """
 
-        with open('resize4me_settings.json', 'r') as file:
+        with open(config_file, 'r') as file:
             config = json.loads(file.read())
 
         self.source_bucket = config.get('source_bucket')
         self.destination_buckets = config.get('destination_buckets')
 
         if not self.source_bucket:
-            raise Exception('A source bucket must be configured')
+            raise ValueError('A source bucket must be configured')
 
         if not self.destination_buckets or len(self.destination_buckets) == 0:
-            raise Exception('At least one destination bucket must be configured')
+            raise ValueError('At least one destination bucket must be configured')
 
         for bucket in self.destination_buckets:
             if not bucket.get('name'):
-                raise Exception('A destination bucket must have a name')
+                raise ValueError('A destination bucket must have a name')
             if not bucket.get('width_size'):
-                raise Exception('A destination bucket must have a width size')
+                raise ValueError('A destination bucket must have a width size')
 
         return config
 
@@ -86,7 +85,7 @@ class Resize4Me():
         ]:
             return extension
         else:
-            raise Exception('File format not supported')
+            raise ValueError('File format not supported')
 
     def resize_image(self, body, extension, size):
         """
@@ -177,6 +176,7 @@ def lambda_handler(event, context):
     """
 
     r4me = Resize4Me()
+    r4me.verify_buckets()
 
     for object in event.get('Records'):
         object_key = unquote_plus(object['s3']['object']['key'])
