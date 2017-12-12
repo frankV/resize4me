@@ -49,6 +49,10 @@ class Resize4Me():
 
         return config
 
+    def metadata(self, key):
+        client = boto3.client('s3')
+        return client.head_object(Bucket=self.source_bucket, Key=key)['Metadata']
+
     def verify_buckets(self):
         """
         Verifies if the buckets specified in the configuration file
@@ -117,6 +121,10 @@ class Resize4Me():
 
         return buffer
 
+    def rename(self, key, size):
+        filename, ext = path.splitext(path.basename(key))
+        return 'resized/{0}-{1}{2}'.format(filename, size, ext)
+
     def upload(self, bucket_name, key, body):
         """
         Uploads a file to an S3 bucket with `public-read` ACL.
@@ -131,12 +139,13 @@ class Resize4Me():
             bucket_name=bucket_name,
             key=key,
         )
-        obj.put(ACL='public-read', Body=body)
+        obj.put(
+            ACL='public-read',
+            Body=body,
+            Metadata={'image-processed': 'true'}
+        )
 
-        print('File saved at {}/{}'.format(
-            bucket_name,
-            key,
-        ))
+        print('File saved at {}/{}'.format(bucket_name, key))
 
     def response(self, key):
         """
@@ -189,14 +198,26 @@ def lambda_handler(event, context):
         )
         obj_body = obj.get()['Body'].read()
 
-        # Resized files
-        for bucket in r4me.destination_buckets:
-            bucket_name = bucket.get('name')
-            bucket_size = bucket.get('width_size')
+        try:
+            meta = r4me.metadata(object_key)
+            # skip if image is already processed
+            if 'image-processed' in meta and meta['image-processed'] == 'true':
+                raise Exception('Already processed image')
 
-            resized_image = r4me.resize_image(
-                obj_body,
-                object_extension,
-                bucket_size
-            )
-            r4me.upload(bucket_name, object_key, resized_image)
+            # Resized files
+            for bucket in r4me.destination_buckets:
+                bucket_name = bucket.get('name')
+                bucket_size = bucket.get('width_size')
+
+                resized_image = r4me.resize_image(
+                    obj_body,
+                    object_extension,
+                    bucket_size
+                )
+
+                r4me.upload(bucket_name, r4me.rename(object_key, bucket_size), resized_image)
+
+                return
+
+        except Exception as e:
+            print(e)

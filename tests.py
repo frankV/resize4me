@@ -7,14 +7,14 @@ from resize4me import Resize4Me
 
 
 CONFIG = {
-    'source_bucket': 'resize4me',
+    'source_bucket': 'workman-photo-bucket',
     'destination_buckets': [
         {
-            'name': 'resize4me-300px',
+            'name': 'workman-photo-bucket',
             'width_size': 300
         },
         {
-            'name': 'resize4me-600px',
+            'name': 'workman-photo-bucket',
             'width_size': 600
         }
     ]

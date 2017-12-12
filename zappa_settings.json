@@ -3,7 +3,7 @@
         "events": [{
             "function": "resize4me.lambda_handler",
             "event_source": {
-                "arn": "arn:aws:s3:::resize4me",
+                "arn": "arn:aws:s3:::workman-photo-bucket",
                 "events": [
                     "s3:ObjectCreated:*"
                 ]
@@ -11,8 +11,10 @@
         }],
         "aws_region": "us-east-1",
         "profile_name": "default",
-        "s3_bucket": "zappa-resize4me",
+        "s3_bucket": "zappa-workman-photo-process",
         "timeout_seconds": 30,
-        "app_function": "app.app"
+        // "app_function": "app.app"
+        "apigateway_enabled": false,
+        "keep_warm": false
     }
 }
