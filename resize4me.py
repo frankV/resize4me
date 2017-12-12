@@ -1,11 +1,10 @@
-import boto3
-import PIL
-import json
+import boto3, PIL, json
 from io import BytesIO
 from os import path
 from urllib.parse import quote_plus, unquote_plus
 from PIL import Image
 from botocore.client import ClientError
+from itertools import product
 
 
 class Resize4Me():
@@ -32,20 +31,11 @@ class Resize4Me():
         with open(config_file, 'r') as file:
             config = json.loads(file.read())
 
-        self.source_bucket = config.get('source_bucket')
-        self.destination_buckets = config.get('destination_buckets')
+        self.source_bucket = config.get('bucket')
+        self.destination_buckets = config.get('bucket')
 
         if not self.source_bucket:
             raise ValueError('A source bucket must be configured')
-
-        if not self.destination_buckets or len(self.destination_buckets) == 0:
-            raise ValueError('At least one destination bucket must be configured')
-
-        for bucket in self.destination_buckets:
-            if not bucket.get('name'):
-                raise ValueError('A destination bucket must have a name')
-            if not bucket.get('width_size'):
-                raise ValueError('A destination bucket must have a width size')
 
         return config
 
@@ -59,11 +49,8 @@ class Resize4Me():
         are accessible.
         """
 
-        buckets = [bucket.get('name') for bucket in self.destination_buckets]
-        buckets.append(self.source_bucket)
-
         try:
-            for bucket in buckets:
+            for bucket in [self.source_bucket, self.destination_buckets]:
                 self.s3.meta.client.head_bucket(Bucket=bucket)
         except ClientError as e:
             raise Exception('Bucket {}: {}'.format(bucket, e))
@@ -91,7 +78,7 @@ class Resize4Me():
         else:
             raise ValueError('File format not supported')
 
-    def resize_image(self, body, extension, size):
+    def resize_image(self, body, extension, size, rfilter):
         """
         Resizes proportionally an image using `size` as the base width.
 
@@ -107,7 +94,7 @@ class Resize4Me():
         img = Image.open(BytesIO(body))
         wpercent = (size / float(img.size[0]))
         hsize = int((float(img.size[1]) * float(wpercent)))
-        img = img.resize((size, hsize), PIL.Image.ANTIALIAS)
+        img = img.resize((size, hsize), rfilter)
 
         buffer = BytesIO()
 
@@ -121,9 +108,17 @@ class Resize4Me():
 
         return buffer
 
-    def rename(self, key, size):
+    def rename(self, key, size, rfilter):
+        FILTERS = {
+            0: 'NEAREST',
+            1: 'LANCZOS',
+            2: 'BILINEAR',
+            3: 'BICUBIC',
+            4: 'BOX',
+            5: 'HAMMING'
+        }
         filename, ext = path.splitext(path.basename(key))
-        return 'resized/{0}-{1}{2}'.format(filename, size, ext)
+        return 'resized/{0}-{1}__{2}{3}'.format(filename, size, FILTERS[rfilter], ext)
 
     def upload(self, bucket_name, key, body):
         """
@@ -146,35 +141,6 @@ class Resize4Me():
         )
 
         print('File saved at {}/{}'.format(bucket_name, key))
-
-    def response(self, key):
-        """
-        Gerenates a dictionary response with all objects generated.
-
-        Args:
-        <str> key - S3 key from the file uploaded.
-
-        Returns:
-        <dict> response - dictonary with all generated files.
-        """
-
-        aws_domain = 'https://s3.amazonaws.com'
-        response = {
-            self.source_bucket: '{}/{}/{}'.format(
-                aws_domain,
-                self.source_bucket,
-                quote_plus(key),
-            )
-        }
-
-        for bucket in self.destination_buckets:
-            dict_key = 'resized-{}px'.format(bucket.get('width_size'))
-            response[dict_key] = 'https://s3.amazonaws.com/{}/{}'.format(
-                bucket.get('name'),
-                quote_plus(key),
-            )
-
-        return response
 
 
 def lambda_handler(event, context):
@@ -204,20 +170,33 @@ def lambda_handler(event, context):
             if 'image-processed' in meta and meta['image-processed'] == 'true':
                 raise Exception('Already processed image')
 
-            # Resized files
-            for bucket in r4me.destination_buckets:
-                bucket_name = bucket.get('name')
-                bucket_size = bucket.get('width_size')
+            sizes = [300, 600, 900]
+            rfilters = [
+                PIL.Image.NEAREST,
+                PIL.Image.LANCZOS,
+                PIL.Image.BILINEAR,
+                PIL.Image.BICUBIC,
+                PIL.Image.BOX,
+                PIL.Image.HAMMING
+            ]
+
+            for size, rfilter in list(product(sizes, rfilters)):
+
+                print("RESIZING:::", size, rfilter, object_key)
 
                 resized_image = r4me.resize_image(
                     obj_body,
                     object_extension,
-                    bucket_size
+                    size,
+                    rfilter
                 )
 
-                r4me.upload(bucket_name, r4me.rename(object_key, bucket_size), resized_image)
+                print("UPLOADING:::", r4me.rename(object_key, size, rfilter))
 
-                return
+                r4me.upload(
+                    r4me.source_bucket, r4me.rename(object_key, size, rfilter), resized_image)
+
+            return
 
         except Exception as e:
             print(e)

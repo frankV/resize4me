@@ -1,9 +1,3 @@
 {
-    "source_bucket": "workman-photo-bucket",
-    "destination_buckets": [
-        {
-            "name": "workman-photo-bucket",
-            "width_size": 300
-        }
-    ]
+    "bucket": "workman-photo-bucket"
 }
