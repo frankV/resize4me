@@ -148,6 +148,9 @@ def lambda_handler(event, context):
     Given a configuration file with source_bucket and destination_buckets,
     will resize any valid file uploaded to the source_bucket and save
     into the destination bucket.
+
+    if odd things are happening with resizing, read this:
+        https://stackoverflow.com/questions/28344258/with-pythons-pil-how-to-set-dpi-before-loading-an-image
     """
 
     r4me = Resize4Me()
@@ -170,7 +173,7 @@ def lambda_handler(event, context):
             if 'image-processed' in meta and meta['image-processed'] == 'true':
                 raise Exception('Already processed image')
 
-            sizes = [300, 600, 900]
+            sizes = [500, 1200, 2800]
             rfilters = [
                 PIL.Image.NEAREST,
                 PIL.Image.LANCZOS,
